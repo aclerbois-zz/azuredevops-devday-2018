@@ -1,0 +1,52 @@
+resources:
+- repo: self
+  fetchDepth: 15
+variables: 
+- name: ProjectPath
+  value: 'website/website.csproj'
+- name: TestProjectPath
+  value: 'website.tests/website.tests.csproj'
+- name: BuildConfiguration
+  value: RELEASE
+queue:
+  name: Hosted Ubuntu 1604
+  demands: 
+  - npm
+  - node.js
+steps:
+- task: Npm@1
+  displayName: 'npm install'
+  inputs:
+    workingDir: website/
+    verbose: false
+- task: Gulp@0
+  displayName: 'gulp dev'
+  inputs:
+    gulpFile: website/gulpfile.js
+    targets: dev
+- task: DotNetCoreCLI@2
+  displayName: Restore
+  inputs:
+    command: restore
+- task: DotNetCoreCLI@2
+  displayName: Build
+  inputs:
+    arguments: '--configuration $(BuildConfiguration)'
+- task: DotNetCoreCLI@2
+  displayName: Test
+  inputs:
+    command: test
+    projects: '$(TestProjectPath)'
+    arguments: '--configuration $(BuildConfiguration)'
+- task: DotNetCoreCLI@2
+  displayName: Publish
+  inputs:
+    command: publish
+    projects: '$(ProjectPath)'
+    publishWebProjects: True
+    arguments: '--configuration $(BuildConfiguration) --output $(build.artifactstagingdirectory)'
+    zipAfterPublish: True
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish Artifact'
+  inputs:
+    PathtoPublish: '$(build.artifactstagingdirectory)'
